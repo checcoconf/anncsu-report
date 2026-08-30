@@ -764,6 +764,77 @@ def scrivi_readme(path: Path, mese: str, comuni: list[dict], regioni: list[dict]
     return testo
 
 
+def readme_cartella_report(path: Path, mese: str, regioni: list[dict],
+                           novita: list[dict], mesi: list[str]) -> None:
+    """README di report/: si apre entrando nella cartella su GitHub."""
+    t = ["# I dati", "",
+         f"Fotografia di **{mese}**. La lettura guidata, con i totali e la spiegazione delle "
+         "colonne, è nel [README del repository](../README.md).", "",
+         "| | Cosa contiene |", "|---|---|",
+         "| **[`novita.csv`](novita.csv)** | solo i comuni cambiati rispetto al report "
+         f"precedente, dal più attivo in giù — sono {mig(len(novita))} |",
+         "| **[`regioni/`](regioni/)** | una tabella per regione, tutti i comuni, lo stato di "
+         "adesso |",
+         "| **[`riepilogo-regioni.csv`](riepilogo-regioni.csv)** | venti righe, i totali di "
+         "ogni regione |",
+         "| **[`storico/`](storico/)** | le variazioni mese per mese, congelate |",
+         "| `sorgenti.json` | la data del file ANNCSU di ogni regione: serve al workflow per "
+         "capire se c'è qualcosa di nuovo |", "",
+         "Per il file unico con tutti i comuni, in CSV e in Excel, vedi le "
+         "[release](../../../releases).", "",
+         "## Come leggere le variazioni", "",
+         "Apri una tabella regionale, clicca **History** in alto a destra e poi un commit: il "
+         "confronto mostra in verde e in rosso le righe dei comuni che si sono mossi, con i "
+         "numeri vecchi accanto ai nuovi. Le tabelle sono divise per regione e ordinate sempre "
+         "allo stesso modo proprio per questo: il diff resta corto e leggibile.", ""]
+    if mesi:
+        t += ["## Mesi disponibili", "", " · ".join(f"[{m}](storico/{m}/)" for m in mesi), ""]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(t) + "\n", encoding="utf-8")
+
+
+def readme_cartella_regioni(path: Path, mese: str, regioni: list[dict],
+                            aveva_precedente: bool) -> None:
+    """README di report/regioni/: l'elenco delle venti tabelle."""
+    t = ["# Le tabelle regionali", "",
+         "Una riga per comune. GitHub apre ogni file come tabella con la casella di ricerca in "
+         "alto: scrivi il nome del comune e leggi la sua riga. La spiegazione delle colonne è "
+         "nel [README del repository](../../README.md).", "",
+         f"Situazione a **{mese}**.", "",
+         "| Regione | Comuni | Con coordinate | Completamento |" +
+         (" Aggiunte |" if aveva_precedente else ""),
+         "|---|--:|--:|---|" + ("--:|" if aveva_precedente else "")]
+    for r in regioni:
+        p_ = r["COMPLETAMENTO_%"]
+        riga = (f"| **[{r['REGIONE']}]({Path(r['SCHEDA']).name})** | {mig(r['COMUNI'])} | "
+                f"{mig(r['CON_COORDINATE'])} | {barra(p_)} {p_:.1f}% |")
+        if aveva_precedente:
+            riga += f" {segno(r['COORDINATE_AGGIUNTE'])} |"
+        t.append(riga)
+    t += ["", "Il file è ordinato per provincia e poi per comune, sempre allo stesso modo, così "
+          "il diff fra un mese e l'altro resta leggibile.", ""]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(t) + "\n", encoding="utf-8")
+
+
+def readme_cartella_storico(path: Path, mesi: list[str]) -> None:
+    """README di report/storico/: l'indice dei mesi."""
+    t = ["# Storico", "",
+         "Ogni cartella è la fotografia di un mese: la sintesi in `README.md` e il dettaglio "
+         "dei soli comuni cambiati in `novita.csv`. Le tabelle complete non vengono duplicate "
+         "qui, stanno in [`../regioni/`](../regioni/) e la loro storia si legge dai commit.", ""]
+    if mesi:
+        t += ["| Mese | |", "|---|---|"]
+        for m in sorted(mesi, reverse=True):
+            t.append(f"| **[{m}]({m}/)** | [sintesi]({m}/README.md) · "
+                     f"[variazioni]({m}/novita.csv) |")
+        t.append("")
+    else:
+        t += ["Ancora nessun mese archiviato.", ""]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(t) + "\n", encoding="utf-8")
+
+
 def scheda_mese(path: Path, mese: str, novita: list[dict], regioni: list[dict],
                 aveva_precedente: bool) -> str:
     t = [f"# Novità ANNCSU — {mese}", ""]
@@ -925,6 +996,13 @@ def main() -> int:
             json.dumps({"mese": mese, "dataset": date_dataset}, indent=2, sort_keys=True) + "\n",
             encoding="utf-8")
         scrivi_readme(Path(args.readme), mese, comuni, regioni_agg, novita, bool(prec))
+        mesi = sorted(d.name for d in (out / "storico").glob("*") if d.is_dir()) if \
+            (out / "storico").exists() else []
+        if mese not in mesi:
+            mesi.append(mese)
+        readme_cartella_report(out / "README.md", mese, regioni_agg, novita, sorted(mesi, reverse=True)[:12])
+        readme_cartella_regioni(out / "regioni" / "README.md", mese, regioni_agg, bool(prec))
+        readme_cartella_storico(out / "storico" / "README.md", mesi)
 
     # lo storico e' parte del repo: lo scrive solo un report completo
     storico = (out if completo else dist) / "storico" / mese
@@ -932,6 +1010,9 @@ def main() -> int:
     sintesi = scheda_mese(storico / "README.md", mese, novita, regioni_agg, bool(prec))
 
     dist.mkdir(parents=True, exist_ok=True)
+    # copia in dist: le note della release non devono dipendere da dove e'
+    # finito lo storico, altrimenti il passo di pubblicazione si rompe
+    (dist / "note-release.md").write_text(sintesi, encoding="utf-8")
     scrivi_csv(dist / f"comuni-{mese}.csv", COLONNE_COMUNI, comuni)
     scrivi_xlsx(dist / f"anncsu-{mese}.xlsx", comuni, regioni_agg, novita)
 
