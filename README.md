@@ -62,7 +62,7 @@ scaricabile da chiunque senza login e senza far crescere la history.
 
 Quattro strade, a seconda di cosa serve.
 
-**Il sito.** `https://checcoconf.github.io/wme-fonti-stradali-it/` — casella di
+**Il sito.** `https://checcoconf.github.io/anncsu-report/` — casella di
 ricerca, filtro per regione, "solo chi si è mosso", "solo sotto il 50%",
 ordinamento per colonna. Legge `docs/dati/comuni.json` (630 KB, 139 KB
 compressi in transito) e fa tutto nel browser: nessun backend, nessun download.
@@ -115,28 +115,34 @@ troppo per il repo ma gestibile come allegato di release da riscaricare all'avvi
 
 ## Come gira
 
-Parte il 6 e il 16 di ogni mese, oppure a mano da **Actions → Report ANNCSU →
+Parte **ogni giorno alle 04:20 UTC**, oppure a mano da **Actions → Report ANNCSU →
 Run workflow**.
 
-Scarica una regione alla volta, la legge in streaming dentro lo ZIP senza mai
-estrarla e cancella il file prima di passare alla successiva: il picco di disco
-è quello del file regionale più grande e la memoria resta di qualche decina di MB
-anche sui 27 milioni di accessi nazionali. Il runner GitHub (4 CPU, 16 GB di RAM,
-14 GB di disco, 6 ore di limite) è abbondante, e su un repo pubblico i minuti
-sono gratis.
+Ogni corsa comincia da un controllo che costa una manciata di byte. Il nome del
+csv dentro ogni zip contiene la data di generazione, e in un file zip quel nome
+sta nell'intestazione del primo membro, cioè nei primissimi byte: con una
+richiesta `Range: bytes=0-511` si legge senza scaricare il resto. Venti regioni,
+circa 10 KB in tutto. Se nessuna data è cambiata rispetto a `sorgenti.json` il
+job finisce lì, in una decina di secondi.
 
-Due protezioni:
+Solo quando almeno una regione ha una data nuova parte il lavoro vero: scarica
+una regione alla volta, la legge in streaming dentro lo zip senza mai estrarla e
+cancella il file prima di passare alla successiva. Il picco di disco è quello del
+file regionale più grande e la memoria resta di qualche decina di MB anche sui
+27 milioni di civici nazionali. Il runner GitHub (4 CPU, 16 GB di RAM, 14 GB di
+disco, 6 ore di limite) è abbondante, e su un repo pubblico i minuti sono gratis.
 
-- **`--solo-se-aggiornato`**, attivo nelle corse programmate: il nome del CSV
-  dentro ogni ZIP contiene la data di generazione, che finisce in `sorgenti.json`.
-  Se nessuna regione è cambiata il job esce senza committare. È così che il report
-  esce quando i dati si muovono davvero e non a calendario fisso.
-- **report incompleto = job fallito**: se anche una sola regione non si scarica
-  non viene pubblicato nulla, perché un report a cui manca una regione produrrebbe
-  il mese dopo migliaia di variazioni inesistenti. Basta rilanciare il workflow.
+Se il controllo di una regione fallisce, quella regione viene considerata
+cambiata. Una corsa completa di troppo costa mezz'ora di runner; una mancata
+costa un mese di ritardo.
 
-Il commit contiene `[skip ci]`, così non innesca il workflow di release dello
-userscript.
+Un'altra protezione: **report incompleto = job fallito**. Se anche una sola
+regione non si scarica non viene pubblicato nulla, perché un report a cui manca
+una regione produrrebbe il mese dopo migliaia di variazioni inesistenti. Basta
+rilanciare il workflow.
+
+Il commit contiene `[skip ci]`: non serve in questo repo, ma evita che un
+eventuale altro workflow reagisca ai commit del bot.
 
 ## Prove in locale
 
@@ -147,8 +153,11 @@ pip install -r tools/requirements.txt
 python tools/anncsu_report.py --out /tmp/prova --dist /tmp/prova-dist \
   --regioni VALL,MOLI --parziale
 
+# solo il controllo: dice se l'ANNCSU ha ripubblicato qualcosa
+python tools/anncsu_report.py --out report --controlla
+
 # tutto, come in CI
-python tools/anncsu_report.py --out report --dist dist
+python tools/anncsu_report.py --out report --dist dist --sito docs
 ```
 
 ## Manutenzione

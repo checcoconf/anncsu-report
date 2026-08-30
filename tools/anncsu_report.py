@@ -34,7 +34,7 @@ from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
 
 BASE_URL = "https://anncsu.open.agenziaentrate.gov.it/age-inspire/opendata/anncsu/getds.php"
-UA = "wme-fonti-stradali-it/report-anncsu (+https://github.com/checcoconf/wme-fonti-stradali-it)"
+UA = "anncsu-report (+https://github.com/checcoconf/anncsu-report)"
 
 # codice ANNCSU, nome regione, nome del file nel repo
 REGIONI = [
@@ -120,6 +120,60 @@ def scarica(url: str, dest: Path, tentativi: int = 4, timeout: int = 900) -> Pat
             log(f"  tentativo {n}/{tentativi} fallito ({e}); riprovo tra {attesa}s")
             time.sleep(attesa)
     raise RuntimeError(f"download fallito: {url} ({ultimo})")
+
+
+def data_dal_nome(nome: str) -> str:
+    """INDIR_ABRU_20260731.csv -> 2026-07-31"""
+    m = re.search(r"(\d{8})", Path(nome).stem)
+    if not m:
+        return ""
+    try:
+        return datetime.strptime(m.group(1), "%Y%m%d").date().isoformat()
+    except ValueError:
+        return m.group(1)
+
+
+def sbircia_data(url: str, timeout: int = 60) -> str:
+    """
+    Legge la data del dataset senza scaricare lo zip.
+
+    Il nome del csv contiene la data di generazione, e in uno zip quel nome sta
+    nell'intestazione del primo membro, nei primi byte del file. Con una richiesta
+    Range ne bastano 512 invece di centinaia di megabyte. Se il server ignora
+    l'header Range chiudiamo comunque la connessione dopo il primo blocco.
+    """
+    req = Request(url, headers={"User-Agent": UA, "Accept": "*/*", "Range": "bytes=0-511"})
+    with urlopen(req, timeout=timeout) as r:
+        testa = r.read(512)
+    if testa[:4] != b"PK\x03\x04" or len(testa) < 30:
+        raise ValueError("non sembra uno zip")
+    lung_nome = int.from_bytes(testa[26:28], "little")
+    nome = testa[30:30 + lung_nome].decode("utf-8", "replace")
+    data = data_dal_nome(nome)
+    if not data:
+        raise ValueError(f"nessuna data nel nome {nome!r}")
+    return data
+
+
+def controlla_aggiornamenti(sorgenti_prec: dict, pausa: float) -> tuple[dict, list]:
+    """Confronta la data di ogni dataset regionale con quella dell'ultimo report."""
+    date_ora, cambiate = {}, []
+    for cod, nome, _ in REGIONI:
+        try:
+            data = sbircia_data(f"{BASE_URL}?INDIR_{cod}")
+        except Exception as e:  # noqa: BLE001
+            # nel dubbio la consideriamo cambiata: meglio una corsa in piu'
+            log(f"  {nome}: controllo fallito ({e}), la tratto come cambiata")
+            date_ora[cod], _ = "", cambiate.append(nome)
+            continue
+        date_ora[cod] = data
+        prec = sorgenti_prec.get(cod)
+        segno_ = "=" if prec == data else "→"
+        log(f"  {nome}: {prec or 'mai visto'} {segno_} {data}")
+        if prec != data:
+            cambiate.append(nome)
+        time.sleep(pausa)
+    return date_ora, cambiate
 
 
 # --------------------------------------------------------------------------
@@ -210,13 +264,7 @@ def conta_regione(zip_path: Path) -> tuple[dict, str]:
             raise ValueError(f"nessun csv dentro {zip_path.name}: {zf.namelist()}")
         membro = membri[0]
 
-        data_dataset = ""
-        m = re.search(r"(\d{8})", Path(membro).stem)
-        if m:
-            try:
-                data_dataset = datetime.strptime(m.group(1), "%Y%m%d").date().isoformat()
-            except ValueError:
-                data_dataset = m.group(1)
+        data_dataset = data_dal_nome(membro)
 
         # Campiono finche' non incontro un po' di coordinate: se i primi comuni
         # della regione non ne hanno, le prime mille righe sono tutte vuote.
@@ -729,6 +777,8 @@ def main() -> int:
                     help="esce senza scrivere nulla se nessun dataset e' cambiato")
     ap.add_argument("--parziale", action="store_true",
                     help="consente un report incompleto; non aggiorna le schede regionali")
+    ap.add_argument("--controlla", action="store_true",
+                    help="guarda solo se i dataset sono cambiati, senza scaricarli")
     ap.add_argument("--pausa", type=float, default=3.0, help="secondi tra un download e l'altro")
     args = ap.parse_args()
 
@@ -748,6 +798,22 @@ def main() -> int:
     sorgenti_prec = {}
     if sorgenti_path.exists():
         sorgenti_prec = json.loads(sorgenti_path.read_text()).get("dataset", {})
+
+    if args.controlla:
+        log("controllo le date dei dataset senza scaricarli")
+        _, cambiate = controlla_aggiornamenti(sorgenti_prec, min(args.pausa, 1.0))
+        cambiato = bool(cambiate) or not sorgenti_prec
+        if cambiato:
+            elenco = ", ".join(cambiate) if cambiate else "primo controllo"
+            log(f"da aggiornare: {elenco}")
+            print(f"::notice::ANNCSU aggiornato ({elenco})")
+        else:
+            log("nessun dataset regionale e' cambiato")
+        if os.environ.get("GITHUB_OUTPUT"):
+            with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+                f.write(f"cambiato={'true' if cambiato else 'false'}\n")
+                f.write(f"regioni_cambiate={len(cambiate)}\n")
+        return 0
 
     dati: dict[str, dict] = {}
     date_dataset: dict[str, str] = {}
