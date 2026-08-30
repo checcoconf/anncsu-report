@@ -2,10 +2,12 @@ name: Report ANNCSU
 
 on:
   schedule:
-    # ogni giorno alle 03:00 UTC (le 5 del mattino in Italia d'estate, le 4
-    # d'inverno): il primo passo costa una manciata di byte e serve solo a
-    # capire se l'ANNCSU ha ripubblicato qualcosa
-    - cron: "0 3 * * *"
+    # Il cron di GitHub è in UTC e non segue l'ora legale, quindi "le 3 italiane"
+    # sono le 01:00 UTC d'estate e le 02:00 UTC d'inverno. Ci sono entrambe: una
+    # delle due cade sempre alle 3 in Italia, e la corsa di troppo costa dieci
+    # secondi perché il primo passo scarica solo qualche KB.
+    - cron: "0 1 * * *"
+    - cron: "0 2 * * *"
   workflow_dispatch:
     inputs:
       forza:
@@ -48,22 +50,22 @@ jobs:
         if: steps.controllo.outputs.cambiato == 'true' || inputs.forza || inputs.regioni != ''
         run: |
           set -o pipefail
-          ARGS="--out report --dist dist --sito docs --lavoro $RUNNER_TEMP/anncsu"
+          ARGS="--out report --dist dist --readme README.md --lavoro $RUNNER_TEMP/anncsu"
           if [ -n "${{ inputs.regioni }}" ]; then
             ARGS="$ARGS --regioni ${{ inputs.regioni }} --parziale"
           fi
           python tools/anncsu_report.py $ARGS
 
-      - name: Committa schede, novità e dati del sito
+      - name: Committa il report
         if: steps.genera.outputs.pubblica == 'true'
         run: |
-          if [ -z "$(git status --porcelain report data docs)" ]; then
+          if [ -z "$(git status --porcelain report data README.md)" ]; then
             echo "Nessuna modifica da committare."
             exit 0
           fi
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add report data docs
+          git add report data README.md
           git commit -m "Report ANNCSU ${{ steps.genera.outputs.mese }}: ${{ steps.genera.outputs.variazioni }} comuni variati [skip ci]"
           # se nel frattempo e' arrivato altro su main, riallineo e riprovo
           for i in 1 2 3; do
@@ -78,12 +80,21 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="report-${{ steps.genera.outputs.mese }}"
-          NOTE="report/storico/${{ steps.genera.outputs.mese }}/README.md"
+          NOTE="dist/note-release.md"
+          [ -f "$NOTE" ] || echo "Report ANNCSU ${{ steps.genera.outputs.mese }}." > "$NOTE"
+
+          # le note non vanno allegate come file, sono il testo della release
+          ALLEGATI=$(find dist -maxdepth 1 -type f ! -name note-release.md)
+          if [ -z "$ALLEGATI" ]; then
+            echo "::warning::nessun file da allegare, salto la release"
+            exit 0
+          fi
+
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" dist/* --clobber
+            gh release upload "$TAG" $ALLEGATI --clobber
             gh release edit "$TAG" --notes-file "$NOTE"
           else
-            gh release create "$TAG" dist/* \
+            gh release create "$TAG" $ALLEGATI \
               --title "Report ANNCSU ${{ steps.genera.outputs.mese }}" \
               --notes-file "$NOTE"
           fi
