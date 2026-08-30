@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Civici georeferenziati — ANNCSU</title>
+<meta name="description" content="Cerca un comune italiano e scopri quanti dei suoi numeri civici hanno le coordinate nell'archivio nazionale ANNCSU.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --inchiostro:#132430;
+  --carta:#EFF1EC;
+  --carta-riga:#DDE2D9;
+  --targa:#15528C;
+  --targa-chiara:#2E7ABF;
+  --segnale:#F2C230;
+  --tenue:#5D6D75;
+  --bordo:#C8CFC6;
+  --verde:#2C7A5B;
+  --mattone:#A8442A;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background:var(--carta);
+  background-image:linear-gradient(var(--carta-riga) 1px,transparent 1px),
+                   linear-gradient(90deg,var(--carta-riga) 1px,transparent 1px);
+  background-size:28px 28px;
+  color:var(--inchiostro);
+  font:400 16px/1.5 "Source Sans 3",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+.foglio{max-width:1180px;margin:0 auto;padding:0 20px 80px}
+
+/* --- testata --- */
+header{padding:44px 0 28px}
+.occhiello{
+  font:600 13px/1 "IBM Plex Mono",ui-monospace,monospace;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--tenue);margin:0 0 14px
+}
+h1{
+  font:700 clamp(34px,6vw,58px)/1.02 "Barlow Condensed",Impact,sans-serif;
+  letter-spacing:-.01em;margin:0 0 16px;max-width:16ch;text-transform:uppercase
+}
+.sottotitolo{margin:0;max-width:56ch;color:var(--tenue);font-size:17px}
+
+/* La targa: il numero civico smaltato blu, l'oggetto di cui parla questa pagina. */
+.targa{
+  display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
+  background:var(--targa);color:#fff;border-radius:5px;
+  box-shadow:inset 0 0 0 1px var(--targa),inset 0 0 0 3px var(--targa-chiara);
+  padding:10px 16px;min-width:82px;text-align:center
+}
+.targa .val{font:600 26px/1 "IBM Plex Mono",monospace;letter-spacing:-.02em}
+.targa .eti{font:500 9px/1.4 "IBM Plex Mono",monospace;letter-spacing:.12em;
+  text-transform:uppercase;opacity:.8;margin-top:5px}
+.targa.piccola{padding:6px 10px;min-width:62px;border-radius:4px}
+.targa.piccola .val{font-size:16px}
+.targa.piccola .eti{display:none}
+.targa.spenta{background:#7E8B93;box-shadow:inset 0 0 0 3px #9AA6AC}
+
+.riepilogo{display:flex;flex-wrap:wrap;gap:22px;align-items:center;margin:30px 0 0;
+  padding:20px;background:#fff;border:1px solid var(--bordo);border-radius:8px}
+.riepilogo p{margin:0;font-size:17px}
+.riepilogo strong{font:600 19px/1 "IBM Plex Mono",monospace}
+.aggiornato{font:400 13px/1 "IBM Plex Mono",monospace;color:var(--tenue)}
+
+/* --- controlli --- */
+.controlli{position:sticky;top:0;z-index:10;padding:16px 0;margin:32px 0 0;
+  background:var(--carta);border-bottom:1px solid var(--bordo)}
+.fila{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+label.campo{flex:1 1 280px;position:relative}
+input[type=search],select{
+  width:100%;padding:11px 13px;border:1px solid var(--bordo);border-radius:6px;
+  background:#fff;color:var(--inchiostro);font:400 16px/1.2 "Source Sans 3",sans-serif
+}
+input[type=search]{padding-left:38px}
+label.campo::before{content:"⌕";position:absolute;left:13px;top:50%;transform:translateY(-55%);
+  font-size:20px;color:var(--tenue);pointer-events:none}
+select{width:auto;min-width:170px}
+input:focus-visible,select:focus-visible,button:focus-visible{
+  outline:3px solid var(--segnale);outline-offset:1px}
+.filtro{border:1px solid var(--bordo);background:#fff;border-radius:6px;padding:10px 14px;
+  font:600 14px/1 "Source Sans 3",sans-serif;color:var(--tenue);cursor:pointer}
+.filtro[aria-pressed=true]{background:var(--inchiostro);border-color:var(--inchiostro);color:#fff}
+.esito{margin:12px 0 0;font:400 14px/1.4 "IBM Plex Mono",monospace;color:var(--tenue)}
+
+/* --- tabella --- */
+table{width:100%;border-collapse:collapse;margin-top:8px}
+caption{text-align:left;padding:16px 0 8px;font:600 13px/1 "IBM Plex Mono",monospace;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--tenue)}
+th{
+  text-align:left;padding:10px 12px;border-bottom:2px solid var(--inchiostro);
+  font:600 12px/1.3 "IBM Plex Mono",monospace;letter-spacing:.06em;text-transform:uppercase;
+  white-space:nowrap;background:var(--carta);position:sticky;top:73px
+}
+th.n{text-align:right}
+th button{all:unset;cursor:pointer;display:inline-flex;gap:5px;align-items:center}
+th button::after{content:attr(data-freccia);color:var(--targa)}
+td{padding:11px 12px;border-bottom:1px solid var(--bordo);vertical-align:middle}
+td.n{text-align:right;font:500 15px/1 "IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+tbody tr:hover{background:#fff}
+.comune{font-weight:600}
+.luogo{display:block;font-size:13px;color:var(--tenue)}
+.piu{color:var(--verde);font-weight:600}
+.meno{color:var(--mattone);font-weight:600}
+.zero{color:var(--tenue)}
+.fermo{font:400 13px/1 "IBM Plex Mono",monospace;color:var(--tenue);white-space:nowrap}
+.vuoto{padding:48px 12px;text-align:center;color:var(--tenue)}
+#ancora{display:block;margin:22px auto 0;padding:12px 22px;background:var(--inchiostro);
+  color:#fff;border:0;border-radius:6px;font:600 15px "Source Sans 3",sans-serif;cursor:pointer}
+
+footer{margin-top:52px;padding-top:22px;border-top:1px solid var(--bordo);
+  font-size:14px;color:var(--tenue)}
+footer a{color:var(--targa)}
+@media (max-width:720px){
+  .nascondi{display:none}
+  th{position:static}
+  .controlli{position:static}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="foglio">
+
+<header>
+  <p class="occhiello">Archivio nazionale numeri civici · dati aperti</p>
+  <h1>Il tuo comune ha messo le coordinate?</h1>
+  <p class="sottotitolo">Ogni numero civico registrato in ANNCSU può avere latitudine e longitudine,
+  oppure no. Dipende da quanto lavoro ci ha messo il comune. Qui vedi a che punto è il tuo.</p>
+
+  <div class="riepilogo">
+    <div class="targa"><span class="val" id="pc-italia">—</span><span class="eti">Italia</span></div>
+    <p id="frase-italia">Carico i dati…</p>
+    <span class="aggiornato" id="aggiornato"></span>
+  </div>
+</header>
+
+<div class="controlli">
+  <div class="fila">
+    <label class="campo">
+      <span class="sr-only" hidden>Cerca un comune</span>
+      <input type="search" id="cerca" placeholder="Cerca un comune, una provincia o un codice"
+             autocomplete="off" spellcheck="false">
+    </label>
+    <select id="regione" aria-label="Filtra per regione">
+      <option value="">Tutte le regioni</option>
+    </select>
+    <button class="filtro" id="f-novita" aria-pressed="false">Solo chi si è mosso</button>
+    <button class="filtro" id="f-indietro" aria-pressed="false">Solo sotto il 50%</button>
+  </div>
+  <p class="esito" id="esito"></p>
+</div>
+
+<table>
+  <caption id="titolo-tabella">Comuni</caption>
+  <thead>
+    <tr>
+      <th><button data-ord="comune" data-freccia="">Comune</button></th>
+      <th class="n"><button data-ord="civici" data-freccia="">Civici</button></th>
+      <th class="n"><button data-ord="coordinate" data-freccia="">Con coordinate</button></th>
+      <th class="n"><button data-ord="perc" data-freccia="▼">Completo</button></th>
+      <th class="n"><button data-ord="aggiunte" data-freccia="">Aggiunte</button></th>
+      <th class="nascondi"><button data-ord="ultimo" data-freccia="">Ultimo movimento</button></th>
+    </tr>
+  </thead>
+  <tbody id="corpo"></tbody>
+</table>
+<button id="ancora" hidden>Mostra altri</button>
+
+<footer>
+  <p>Dati: <a href="https://www.anncsu.gov.it/it/consultazione-dellarchivio/open-data/">open data ANNCSU</a>,
+  Agenzia delle Entrate e Istat. Ricostruiti ogni mese in automatico.
+  Le tabelle complete, lo storico e i file da scaricare sono
+  <a href="https://github.com/checcoconf/wme-fonti-stradali-it/tree/main/report">nel repository</a>.</p>
+  <p><strong>Una cosa che questa pagina non dice:</strong> quali civici hanno ricevuto le coordinate.
+  Sa quanti, non quali. Serve confrontare i 27 milioni di accessi uno per uno, ed è un lavoro diverso.</p>
+</footer>
+
+</div>
+
+<script>
+const N = new Intl.NumberFormat("it-IT");
+let DATI = null, ORD = {campo:"perc", giu:true}, MOSTRATI = 200;
+
+const $ = s => document.querySelector(s);
+const senzaAccenti = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();
+
+fetch("dati/comuni.json")
+  .then(r => { if(!r.ok) throw new Error(r.status); return r.json(); })
+  .then(d => { DATI = prepara(d); avvia(); })
+  .catch(() => {
+    $("#corpo").innerHTML = `<tr><td colspan="6" class="vuoto">
+      Non riesco a caricare <code>dati/comuni.json</code>.
+      Il file viene creato dal workflow al primo report completo.</td></tr>`;
+    $("#frase-italia").textContent = "Dati non disponibili.";
+  });
+
+function prepara(d){
+  const comuni = d.comuni.map(([reg,prov,com,civ,coo,dcoo,dciv,ult,istat,cat]) => ({
+    reg, prov, com, civ, coo, dcoo, dciv, ult, istat, cat,
+    perc: civ ? coo/civ*100 : 0,
+    cerca: senzaAccenti(com+" "+prov+" "+istat+" "+cat)
+  }));
+  return {...d, comuni};
+}
+
+function avvia(){
+  const civ = DATI.comuni.reduce((a,c)=>a+c.civ,0);
+  const coo = DATI.comuni.reduce((a,c)=>a+c.coo,0);
+  const nuove = DATI.comuni.reduce((a,c)=>a+c.dcoo,0);
+  const mossi = DATI.comuni.filter(c=>c.dcoo||c.dciv).length;
+  const pc = civ ? coo/civ*100 : 0;
+
+  $("#pc-italia").textContent = pc.toFixed(0)+"%";
+  $("#frase-italia").innerHTML =
+    `<strong>${N.format(coo)}</strong> civici hanno le coordinate, su ${N.format(civ)} in archivio.` +
+    (nuove ? ` Questo mese ne sono comparse <strong>${N.format(nuove)}</strong> in ${N.format(mossi)} comuni.` : "");
+  $("#aggiornato").textContent = "Dati al " + (DATI.dati_al || DATI.mese);
+
+  const sel = $("#regione");
+  DATI.regioni.forEach((r,i) => sel.add(new Option(r.nome, i)));
+
+  $("#cerca").addEventListener("input", ricarica);
+  sel.addEventListener("change", ricarica);
+  document.querySelectorAll(".filtro").forEach(b =>
+    b.addEventListener("click", () => {
+      b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") === "true" ? "false" : "true");
+      ricarica();
+    }));
+  document.querySelectorAll("th button").forEach(b =>
+    b.addEventListener("click", () => {
+      const c = b.dataset.ord;
+      ORD = {campo:c, giu: ORD.campo === c ? !ORD.giu : true};
+      document.querySelectorAll("th button").forEach(x => x.dataset.freccia = "");
+      b.dataset.freccia = ORD.giu ? "▼" : "▲";
+      ricarica();
+    }));
+  $("#ancora").addEventListener("click", () => { MOSTRATI += 400; disegna(filtra()); });
+
+  ricarica();
+}
+
+function ricarica(){ MOSTRATI = 200; disegna(filtra()); }
+
+function filtra(){
+  const q = senzaAccenti($("#cerca").value.trim());
+  const reg = $("#regione").value;
+  const soloNovita = $("#f-novita").getAttribute("aria-pressed") === "true";
+  const soloIndietro = $("#f-indietro").getAttribute("aria-pressed") === "true";
+
+  let out = DATI.comuni.filter(c =>
+    (!q || c.cerca.includes(q)) &&
+    (reg === "" || c.reg === +reg) &&
+    (!soloNovita || c.dcoo !== 0 || c.dciv !== 0) &&
+    (!soloIndietro || c.perc < 50));
+
+  const chiavi = {
+    comune: c => c.com, civici: c => c.civ, coordinate: c => c.coo,
+    perc: c => c.perc, aggiunte: c => c.dcoo, ultimo: c => c.ult
+  };
+  const k = chiavi[ORD.campo], seg = ORD.giu ? -1 : 1;
+  out.sort((a,b) => {
+    const x = k(a), y = k(b);
+    return (x < y ? 1 : x > y ? -1 : 0) * seg || (a.com < b.com ? -1 : 1);
+  });
+  return out;
+}
+
+function disegna(righe){
+  const corpo = $("#corpo");
+  $("#esito").textContent = righe.length
+    ? `${N.format(righe.length)} comuni trovati`
+    : "";
+  $("#titolo-tabella").textContent =
+    $("#regione").value === "" ? "Comuni" : DATI.regioni[$("#regione").value].nome;
+
+  if(!righe.length){
+    corpo.innerHTML = `<tr><td colspan="6" class="vuoto">
+      Nessun comune con questi filtri. Prova a cancellare la ricerca.</td></tr>`;
+    $("#ancora").hidden = true;
+    return;
+  }
+
+  corpo.innerHTML = righe.slice(0, MOSTRATI).map(c => {
+    const p = c.perc;
+    const targa = `<span class="targa piccola ${p ? "" : "spenta"}"><span class="val">${p.toFixed(0)}%</span></span>`;
+    const agg = c.dcoo > 0 ? `<span class="piu">+${N.format(c.dcoo)}</span>`
+              : c.dcoo < 0 ? `<span class="meno">${N.format(c.dcoo)}</span>`
+              : `<span class="zero">—</span>`;
+    return `<tr>
+      <td><span class="comune">${c.com}</span>
+          <span class="luogo">${c.prov} · ${DATI.regioni[c.reg].nome}</span></td>
+      <td class="n">${N.format(c.civ)}</td>
+      <td class="n">${N.format(c.coo)}</td>
+      <td class="n">${targa}</td>
+      <td class="n">${agg}</td>
+      <td class="nascondi"><span class="fermo">${c.ult || "—"}</span></td>
+    </tr>`;
+  }).join("");
+
+  $("#ancora").hidden = righe.length <= MOSTRATI;
+  $("#ancora").textContent = `Mostra altri ${N.format(Math.min(400, righe.length - MOSTRATI))}`;
+}
+</script>
+</body>
+</html>

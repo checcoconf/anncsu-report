@@ -1,0 +1,100 @@
+name: Report ANNCSU
+
+on:
+  schedule:
+    # ogni giorno alle 03:00 UTC (le 5 del mattino in Italia d'estate, le 4
+    # d'inverno): il primo passo costa una manciata di byte e serve solo a
+    # capire se l'ANNCSU ha ripubblicato qualcosa
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+    inputs:
+      forza:
+        description: "Genera il report anche se i dataset non sono cambiati"
+        type: boolean
+        default: false
+      regioni:
+        description: "Codici ANNCSU separati da virgola (solo per prove, es. VALL,MOLI)"
+        type: string
+        default: ""
+
+concurrency:
+  group: report-anncsu
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installa le dipendenze
+        run: pip install --disable-pip-version-check -r tools/requirements.txt
+
+      - name: Guarda se l'ANNCSU ha pubblicato qualcosa di nuovo
+        id: controllo
+        run: python tools/anncsu_report.py --out report --controlla
+
+      - name: Genera il report
+        id: genera
+        if: steps.controllo.outputs.cambiato == 'true' || inputs.forza || inputs.regioni != ''
+        run: |
+          set -o pipefail
+          ARGS="--out report --dist dist --sito docs --lavoro $RUNNER_TEMP/anncsu"
+          if [ -n "${{ inputs.regioni }}" ]; then
+            ARGS="$ARGS --regioni ${{ inputs.regioni }} --parziale"
+          fi
+          python tools/anncsu_report.py $ARGS
+
+      - name: Committa schede, novità e dati del sito
+        if: steps.genera.outputs.pubblica == 'true'
+        run: |
+          if [ -z "$(git status --porcelain report data docs)" ]; then
+            echo "Nessuna modifica da committare."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add report data docs
+          git commit -m "Report ANNCSU ${{ steps.genera.outputs.mese }}: ${{ steps.genera.outputs.variazioni }} comuni variati [skip ci]"
+          # se nel frattempo e' arrivato altro su main, riallineo e riprovo
+          for i in 1 2 3; do
+            git pull --rebase origin "${GITHUB_REF_NAME}" && git push && exit 0
+            sleep 10
+          done
+          exit 1
+
+      - name: Pubblica il dump completo come release
+        if: steps.genera.outputs.pubblica == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="report-${{ steps.genera.outputs.mese }}"
+          NOTE="report/storico/${{ steps.genera.outputs.mese }}/README.md"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber
+            gh release edit "$TAG" --notes-file "$NOTE"
+          else
+            gh release create "$TAG" dist/* \
+              --title "Report ANNCSU ${{ steps.genera.outputs.mese }}" \
+              --notes-file "$NOTE"
+          fi
+
+      - name: Allega gli output anche al run
+        if: always() && steps.genera.outputs.pubblica == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-anncsu
+          path: |
+            report/
+            dist/
+          if-no-files-found: ignore
+          retention-days: 90
