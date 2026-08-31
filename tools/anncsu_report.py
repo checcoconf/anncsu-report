@@ -970,6 +970,14 @@ def main() -> int:
         "GITHUB_REPOSITORY", "checcoconf/anncsu-report")
 
     if args.note_storiche:
+        # dal README di main: e' quello che finisce nelle note delle release
+        readme = Path(args.readme)
+        if readme.is_file():
+            (dist / "note").mkdir(parents=True, exist_ok=True)
+            (dist / "note" / "da-readme.md").write_text(
+                assolutizza(readme.read_text(encoding="utf-8"), f"{repo_url}/blob/main/"),
+                encoding="utf-8")
+            log(f"note dal README in {dist / 'note' / 'da-readme.md'}")
         mesi = note_storiche(out, dist, repo_url)
         log(f"note rigenerate per: {', '.join(mesi) if mesi else 'nessun mese'}")
         if os.environ.get("GITHUB_OUTPUT"):
@@ -1060,7 +1068,8 @@ def main() -> int:
         sorgenti_path.write_text(
             json.dumps({"mese": mese, "dataset": date_dataset}, indent=2, sort_keys=True) + "\n",
             encoding="utf-8")
-        scrivi_readme(Path(args.readme), mese, comuni, regioni_agg, novita, bool(prec))
+        testo_readme = scrivi_readme(Path(args.readme), mese, comuni, regioni_agg,
+                                     novita, bool(prec))
         mesi = sorted(d.name for d in (out / "storico").glob("*") if d.is_dir()) if \
             (out / "storico").exists() else []
         if mese not in mesi:
@@ -1070,6 +1079,10 @@ def main() -> int:
         readme_cartella_storico(out / "storico" / "README.md", mesi)
 
     # lo storico e' parte del repo: lo scrive solo un report completo
+    if not completo:
+        testo_readme = scrivi_readme(dist / "report.md", mese, comuni, regioni_agg,
+                                     novita, bool(prec))
+
     storico = (out if completo else dist) / "storico" / mese
     scrivi_csv(storico / "novita.csv", COLONNE_COMUNI, novita)
     sintesi = scheda_mese(storico / "README.md", mese, novita, regioni_agg, bool(prec))
@@ -1077,9 +1090,11 @@ def main() -> int:
     dist.mkdir(parents=True, exist_ok=True)
     # copia in dist: le note della release non devono dipendere da dove e'
     # finito lo storico, altrimenti il passo di pubblicazione si rompe
-    # le note della release hanno bisogno di link assoluti
-    scheda_mese(dist / "note-release.md", mese, novita, regioni_agg, bool(prec),
-                base=f"{repo_url}/blob/main/report/storico/{mese}/")
+    # Le note della release sono lo stesso report che si legge su main, con i
+    # link riscritti assoluti: nel corpo di una release GitHub scarta i link
+    # relativi, quindi resterebbero etichette senza collegamento.
+    (dist / "note-release.md").write_text(
+        assolutizza(testo_readme, f"{repo_url}/blob/main/"), encoding="utf-8")
     scrivi_csv(dist / f"comuni-{mese}.csv", COLONNE_COMUNI, comuni)
     scrivi_xlsx(dist / f"anncsu-{mese}.xlsx", comuni, regioni_agg, novita)
 
