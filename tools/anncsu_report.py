@@ -836,7 +836,13 @@ def readme_cartella_storico(path: Path, mesi: list[str]) -> None:
 
 
 def scheda_mese(path: Path, mese: str, novita: list[dict], regioni: list[dict],
-                aveva_precedente: bool) -> str:
+                aveva_precedente: bool, base: str = "") -> str:
+    """
+    base vuota = link relativi, giusti dentro il repo.
+    base valorizzata = link assoluti, obbligatori nelle note della release:
+    GitHub le rende senza un percorso di partenza e i link relativi si rompono.
+    """
+    link_novita = f"{base}novita.csv" if base else "novita.csv"
     t = [f"# Novità ANNCSU — {mese}", ""]
     if not aveva_precedente:
         t.append("Primo report: non c'è un mese precedente con cui confrontare.")
@@ -844,8 +850,8 @@ def scheda_mese(path: Path, mese: str, novita: list[dict], regioni: list[dict],
         t.append("Nessun comune ha cambiato numeri rispetto al report precedente.")
     else:
         t.append(f"**{mig(len(novita))} comuni** hanno cambiato qualcosa. Il dettaglio riga per "
-                 "riga è in [`novita.csv`](novita.csv), ordinato dal comune che ha aggiunto più "
-                 "coordinate.")
+                 f"riga è in [`novita.csv`]({link_novita}), ordinato dal comune che ha "
+                 "aggiunto più coordinate.")
 
     t += ["", "## Per regione", "",
           "| Regione | Coordinate aggiunte | Civici aggiunti | Comuni aggiornati | Dati al |",
@@ -874,10 +880,56 @@ def scheda_mese(path: Path, mese: str, novita: list[dict], regioni: list[dict],
             t.append(f"| {r['COMUNE']} | {r['PROVINCIA']} | {segno(r['CIVICI_AGGIUNTI'])} | "
                      f"{segno(r['COORDINATE_AGGIUNTE'])} |")
 
+    if base:
+        t += ["", "---", "",
+              f"Report completo e tabelle regionali: {base.split('/blob/')[0]}"]
+
     testo = "\n".join(t) + "\n"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(testo, encoding="utf-8")
     return testo
+
+
+def assolutizza(testo: str, base: str) -> str:
+    """
+    Riscrive i link relativi del markdown in link assoluti.
+    Serve alle note delle release: GitHub le rende senza un percorso di
+    partenza, quindi un `(novita.csv)` non punta da nessuna parte.
+    """
+    import posixpath
+
+    def sostituisci(m):
+        etichetta, bersaglio = m.group(1), m.group(2).strip()
+        if re.match(r"^(https?:|mailto:|#|/)", bersaglio):
+            return m.group(0)
+        # normalizzo i ../.. cosi' l'indirizzo resta leggibile
+        finale = "/" if bersaglio.endswith("/") else ""
+        assoluto = posixpath.normpath(base + bersaglio) + finale
+        return f"[{etichetta}]({assoluto.replace('https:/', 'https://', 1)})"
+    return re.sub(r"\[([^\]]*)\]\(([^)]+)\)", sostituisci, testo)
+
+
+def note_storiche(out: Path, dist: Path, repo_url: str) -> list[str]:
+    """
+    Rigenera le note di ogni mese gia' archiviato, con i link assoluti.
+    Le release pubblicate prima della correzione avevano link relativi e
+    quindi rotti: cosi' il workflow puo' riallinearle tutte.
+    """
+    mesi = []
+    for cartella in sorted((out / "storico").glob("*")):
+        sorgente = cartella / "README.md"
+        if not sorgente.is_file():
+            continue
+        mese = cartella.name
+        base = f"{repo_url}/blob/main/report/storico/{mese}/"
+        testo = assolutizza(sorgente.read_text(encoding="utf-8"), base)
+        if "Report completo e tabelle regionali" not in testo:
+            testo += f"\n---\n\nReport completo e tabelle regionali: {repo_url}\n"
+        destinazione = dist / "note" / f"{mese}.md"
+        destinazione.parent.mkdir(parents=True, exist_ok=True)
+        destinazione.write_text(testo, encoding="utf-8")
+        mesi.append(mese)
+    return mesi
 
 
 # --------------------------------------------------------------------------
@@ -895,6 +947,8 @@ def main() -> int:
                     help="esce senza scrivere nulla se nessun dataset e' cambiato")
     ap.add_argument("--parziale", action="store_true",
                     help="consente un report incompleto; non aggiorna le schede regionali")
+    ap.add_argument("--note-storiche", action="store_true",
+                    help="rigenera le note di tutte le release gia' pubblicate e esce")
     ap.add_argument("--controlla", action="store_true",
                     help="guarda solo se i dataset sono cambiati, senza scaricarli")
     ap.add_argument("--pausa", type=float, default=3.0, help="secondi tra un download e l'altro")
@@ -911,6 +965,17 @@ def main() -> int:
         if not regioni:
             log(f"nessuna regione valida in {args.regioni!r}")
             return 2
+
+    repo_url = "https://github.com/" + os.environ.get(
+        "GITHUB_REPOSITORY", "checcoconf/anncsu-report")
+
+    if args.note_storiche:
+        mesi = note_storiche(out, dist, repo_url)
+        log(f"note rigenerate per: {', '.join(mesi) if mesi else 'nessun mese'}")
+        if os.environ.get("GITHUB_OUTPUT"):
+            with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+                f.write(f"mesi={' '.join(mesi)}\n")
+        return 0
 
     sorgenti_path = out / "sorgenti.json"
     sorgenti_prec = {}
@@ -1012,7 +1077,9 @@ def main() -> int:
     dist.mkdir(parents=True, exist_ok=True)
     # copia in dist: le note della release non devono dipendere da dove e'
     # finito lo storico, altrimenti il passo di pubblicazione si rompe
-    (dist / "note-release.md").write_text(sintesi, encoding="utf-8")
+    # le note della release hanno bisogno di link assoluti
+    scheda_mese(dist / "note-release.md", mese, novita, regioni_agg, bool(prec),
+                base=f"{repo_url}/blob/main/report/storico/{mese}/")
     scrivi_csv(dist / f"comuni-{mese}.csv", COLONNE_COMUNI, comuni)
     scrivi_xlsx(dist / f"anncsu-{mese}.xlsx", comuni, regioni_agg, novita)
 
