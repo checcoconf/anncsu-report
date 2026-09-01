@@ -2,10 +2,10 @@ name: Report ANNCSU
 
 on:
   schedule:
-    # Il cron di GitHub è in UTC e non segue l'ora legale, quindi "le 3 italiane"
-    # sono le 01:00 UTC d'estate e le 02:00 UTC d'inverno. Ci sono entrambe: una
-    # delle due cade sempre alle 3 in Italia, e la corsa di troppo costa dieci
-    # secondi perché il primo passo scarica solo qualche KB.
+    # Il cron di GitHub è in UTC e non conosce l'ora legale, quindi "le 3
+    # italiane" sono le 01:00 UTC d'estate e le 02:00 UTC d'inverno. Sono
+    # schedulate entrambe, ma il primo passo lascia proseguire solo quella
+    # giusta per il periodo dell'anno: l'altra esce in pochi secondi.
     - cron: "0 1 * * *"
     - cron: "0 2 * * *"
   workflow_dispatch:
@@ -32,6 +32,27 @@ jobs:
     timeout-minutes: 300
 
     steps:
+      - name: Tieni solo la corsa delle 3 del mattino in Italia
+        id: orario
+        if: github.event_name == 'schedule'
+        run: |
+          # Guardo quale cron ha innescato la corsa, non l'ora in cui sta
+          # girando: GitHub accoda i workflow schedulati e può farli partire
+          # con ore di ritardo, quindi l'orario di esecuzione non dice niente.
+          ATTESO=$(python3 -c "
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          fuso = datetime.now(ZoneInfo('Europe/Rome')).utcoffset().total_seconds()
+          print('0 1 * * *' if fuso == 7200 else '0 2 * * *')")
+          RICEVUTO="${{ github.event.schedule }}"
+          if [ "$RICEVUTO" = "$ATTESO" ]; then
+            echo "procedi=true" >> "$GITHUB_OUTPUT"
+            echo "Corsa delle 3 italiane ($RICEVUTO UTC), procedo."
+          else
+            echo "procedi=false" >> "$GITHUB_OUTPUT"
+            echo "Cron $RICEVUTO: in questo periodo le 3 italiane sono $ATTESO UTC. Mi fermo."
+          fi
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
@@ -43,6 +64,7 @@ jobs:
 
       - name: Guarda se l'ANNCSU ha pubblicato qualcosa di nuovo
         id: controllo
+        if: github.event_name != 'schedule' || steps.orario.outputs.procedi == 'true'
         run: python tools/anncsu_report.py --out report --controlla
 
       - name: Genera il report
@@ -84,7 +106,7 @@ jobs:
           [ -f "$NOTE" ] || echo "Report ANNCSU ${{ steps.genera.outputs.mese }}." > "$NOTE"
 
           # le note non vanno allegate come file, sono il testo della release
-          ALLEGATI=$(find dist -maxdepth 1 -type f ! -name note-release.md)
+          ALLEGATI=$(find dist -maxdepth 1 -type f ! -name note-release.md ! -name slack.json)
           if [ -z "$ALLEGATI" ]; then
             echo "::warning::nessun file da allegare, salto la release"
             exit 0
@@ -98,6 +120,26 @@ jobs:
               --title "Report ANNCSU ${{ steps.genera.outputs.mese }}" \
               --notes-file "$NOTE"
           fi
+
+      - name: Avvisa su Slack
+        # salta in silenzio se il secret non c'è: la notifica è facoltativa
+        if: steps.genera.outputs.pubblica == 'true'
+        env:
+          HOOK: ${{ secrets.SLACK_WEBHOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "SLACK_WEBHOOK non configurato, salto."
+            exit 0
+          fi
+          if [ ! -f dist/slack.json ]; then
+            echo "Nessuna novità da annunciare."
+            exit 0
+          fi
+          CODICE=$(curl -sS -o /tmp/slack.out -w '%{http_code}' \
+            -X POST -H 'Content-type: application/json' \
+            --data @dist/slack.json "$HOOK")
+          echo "Slack ha risposto $CODICE: $(cat /tmp/slack.out)"
+          [ "$CODICE" = "200" ]
 
       - name: Allega gli output anche al run
         if: always() && steps.genera.outputs.pubblica == 'true'
