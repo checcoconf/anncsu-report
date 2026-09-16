@@ -4,43 +4,43 @@ Ogni numero civico registrato nell'Anagrafe Nazionale dei Numeri Civici e delle 
 
 ### ███████████████░░░░░  **75.6%**
 
-**20.715.787** civici con coordinate su **27.405.709** in archivio · 7.890 comuni · dati ANNCSU al **2026-08-03**
+**20.731.065** civici con coordinate su **27.415.954** in archivio · 7.891 comuni · dati ANNCSU al **2026-09-15**
 
 ## Cosa è cambiato
 
-**+1.160.319 coordinate** in **2.722 comuni**, in 20 regioni su 20.
+**+12.749 coordinate** in **529 comuni**, in 20 regioni su 20.
 
 I venticinque comuni più attivi:
 
 | Comune | Provincia | Coordinate aggiunte | Ora è al |
 |---|---|--:|--:|
-| **CAGLIARI** | CITTA' METROPOLITANA DI CAGLIARI | +48.659 | 100% |
-| **ANDRIA** | BARLETTA-ANDRIA-TRANI | +47.778 | 100% |
-| **OLBIA** | SASSARI | +47.210 | 100% |
-| **LUCCA** | LUCCA | +46.986 | 100% |
-| **TARANTO** | TARANTO | +45.171 | 100% |
-| **MAZARA DEL VALLO** | TRAPANI | +38.046 | 100% |
-| **PESCARA** | PESCARA | +37.229 | 100% |
-| **RAGUSA** | RAGUSA | +34.357 | 100% |
-| **SALERNO** | SALERNO | +30.574 | 100% |
-| **SIRACUSA** | SIRACUSA | +30.348 | 100% |
-| **VITTORIA** | RAGUSA | +29.493 | 100% |
-| **CARINI** | PALERMO | +26.290 | 100% |
-| **CANICATTÌ** | AGRIGENTO | +25.543 | 100% |
-| **NISCEMI** | CALTANISSETTA | +22.741 | 100% |
-| **GIUGLIANO IN CAMPANIA** | NAPOLI | +21.838 | 100% |
-| **MONTESILVANO** | PESCARA | +20.567 | 100% |
-| **ALGHERO** | SASSARI | +18.366 | 100% |
-| **CERIGNOLA** | FOGGIA | +17.750 | 100% |
-| **MINTURNO** | LATINA | +17.130 | 100% |
-| **BERGAMO** | BERGAMO | +17.126 | 100% |
-| **FRANCAVILLA FONTANA** | BRINDISI | +16.493 | 100% |
-| **NISSORIA** | ENNA | +15.807 | 100% |
-| **VOGHERA** | PAVIA | +14.580 | 100% |
-| **CHIETI** | CHIETI | +14.570 | 100% |
-| **TORREMAGGIORE** | FOGGIA | +14.434 | 100% |
+| **CRECCHIO** | CHIETI | +2.158 | 100% |
+| **SESTO CAMPANO** | ISERNIA | +2.049 | 72% |
+| **MAGLIANO IN TOSCANA** | GROSSETO | +1.927 | 78% |
+| **BUDOIA** | PORDENONE | +1.166 | 56% |
+| **UDINE** | UDINE | +851 | 100% |
+| **PETRALIA SOPRANA** | PALERMO | +788 | 29% |
+| **OTTONE** | PIACENZA | +740 | 100% |
+| **PASIANO DI PORDENONE** | PORDENONE | +612 | 100% |
+| **OGGIONO** | LECCO | +494 | 100% |
+| **ORBETELLO** | GROSSETO | +431 | 100% |
+| **SAN GIOVANNI IN MARIGNANO** | RIMINI | +424 | 98% |
+| **BRINDISI** | BRINDISI | +422 | 100% |
+| **LATINA** | LATINA | +270 | 100% |
+| **MAZZANO ROMANO** | ROMA | +234 | 100% |
+| **RAPOLLA** | POTENZA | +162 | 6% |
+| **BARREA** | AQUILA | +98 | 18% |
+| **SANT'ELIA A PIANISI** | CAMPOBASSO | +92 | 100% |
+| **VALEGGIO SUL MINCIO** | VERONA | +79 | 100% |
+| **SOVICO** | MONZA E DELLA BRIANZA | +76 | 100% |
+| **VIBO VALENTIA** | VIBO VALENTIA | +74 | 100% |
+| **LA SPEZIA** | LA SPEZIA | +63 | 100% |
+| **FOLLONICA** | GROSSETO | +61 | 100% |
+| **PESCHIERA DEL GARDA** | VERONA | +57 | 100% |
+| **PONTEDERA** | PISA | +54 | 100% |
+| **CLIVIO** | VARESE | +51 | 28% |
 
-Tutti e 2.722 in **[`report/novita.csv`](report/novita.csv)**, già ordinati dal più attivo. La copia congelata di questo mese è in [`report/storico/2026-08/`](report/storico/2026-08/).
+Tutti e 529 in **[`report/novita.csv`](report/novita.csv)**, già ordinati dal più attivo. La copia congelata di questo mese è in [`report/storico/2026-09/`](report/storico/2026-09/).
 
 ## Le regioni
 
@@ -48,29 +48,29 @@ Clicca una regione per aprire la sua tabella: GitHub la mostra con la casella di
 
 | Regione | Completamento | Civici | Con coordinate | Aggiunte | Comuni mossi | Dati al |
 |---|---|--:|--:|--:|--:|:--:|
-| **[ABRUZZO](report/regioni/abruzzo.csv)** | █████████░ 85.8% | 786.520 | 674.402 | +121.492 | 89 | 2026-08-03 |
-| **[BASILICATA](report/regioni/basilicata.csv)** | ███████░░░ 72.0% | 440.901 | 317.486 | +13.836 | 32 | 2026-08-03 |
-| **[CALABRIA](report/regioni/calabria.csv)** | ████████░░ 75.7% | 1.405.503 | 1.064.085 | +91.873 | 113 | 2026-08-03 |
-| **[CAMPANIA](report/regioni/campania.csv)** | ███████░░░ 72.7% | 2.131.473 | 1.550.476 | +144.490 | 187 | 2026-08-03 |
-| **[EMILIA ROMAGNA](report/regioni/emilia-romagna.csv)** | ██████████ 95.5% | 1.907.827 | 1.822.897 | +38.585 | 156 | 2026-08-03 |
-| **[FRIULI VENEZIA GIULIA](report/regioni/friuli-venezia-giulia.csv)** | ████░░░░░░ 38.1% | 596.087 | 227.401 | -27.601 | 93 | 2026-08-03 |
-| **[LAZIO](report/regioni/lazio.csv)** | █████████░ 86.8% | 1.880.756 | 1.632.043 | +98.978 | 116 | 2026-08-03 |
-| **[LIGURIA](report/regioni/liguria.csv)** | ███████░░░ 74.1% | 713.646 | 528.666 | -13.678 | 89 | 2026-08-03 |
-| **[LOMBARDIA](report/regioni/lombardia.csv)** | ███████░░░ 66.0% | 3.132.990 | 2.066.726 | -5.558 | 522 | 2026-08-03 |
-| **[MARCHE](report/regioni/marche.csv)** | ███████░░░ 74.5% | 768.520 | 572.296 | +1.605 | 70 | 2026-08-03 |
-| **[MOLISE](report/regioni/molise.csv)** | ████████░░ 82.1% | 254.878 | 209.285 | +31.174 | 41 | 2026-08-03 |
-| **[PIEMONTE](report/regioni/piemonte.csv)** | ██████░░░░ 64.8% | 1.707.585 | 1.106.905 | -28.924 | 392 | 2026-08-03 |
-| **[PUGLIA](report/regioni/puglia.csv)** | ████████░░ 78.2% | 2.306.436 | 1.803.221 | +215.680 | 88 | 2026-08-03 |
-| **[SARDEGNA](report/regioni/sardegna.csv)** | ███████░░░ 69.9% | 1.156.227 | 807.953 | +111.079 | 97 | 2026-08-03 |
-| **[SICILIA](report/regioni/sicilia.csv)** | ████████░░ 76.8% | 3.164.953 | 2.432.080 | +256.922 | 108 | 2026-08-03 |
-| **[TOSCANA](report/regioni/toscana.csv)** | ████████░░ 81.7% | 1.900.746 | 1.553.160 | +84.626 | 101 | 2026-08-03 |
-| **[TRENTINO ALTO ADIGE](report/regioni/trentino-alto-adige.csv)** | ███████░░░ 65.3% | 406.956 | 265.871 | -34.120 | 104 | 2026-08-03 |
-| **[UMBRIA](report/regioni/umbria.csv)** | ████████░░ 82.2% | 446.900 | 367.176 | +16.356 | 30 | 2026-08-03 |
-| **[VALLE D'AOSTA](report/regioni/valle-d-aosta.csv)** | ██░░░░░░░░ 20.5% | 94.302 | 19.297 | -13.269 | 26 | 2026-08-03 |
-| **[VENETO](report/regioni/veneto.csv)** | ████████░░ 76.9% | 2.202.503 | 1.694.361 | +56.773 | 268 | 2026-08-03 |
-| **ITALIA** | ████████░░ 75.6% | 27.405.709 | 20.715.787 | +1.160.319 | 2.722 | 2026-08-03 |
+| **[ABRUZZO](report/regioni/abruzzo.csv)** | █████████░ 86.0% | 787.020 | 676.635 | +2.233 | 14 | 2026-09-15 |
+| **[BASILICATA](report/regioni/basilicata.csv)** | ███████░░░ 72.0% | 441.089 | 317.680 | +194 | 3 | 2026-09-15 |
+| **[CALABRIA](report/regioni/calabria.csv)** | ████████░░ 75.7% | 1.405.721 | 1.064.068 | -17 | 8 | 2026-09-15 |
+| **[CAMPANIA](report/regioni/campania.csv)** | ███████░░░ 72.7% | 2.132.350 | 1.550.188 | -288 | 15 | 2026-09-15 |
+| **[EMILIA ROMAGNA](report/regioni/emilia-romagna.csv)** | ██████████ 95.6% | 1.907.894 | 1.824.327 | +1.430 | 73 | 2026-09-15 |
+| **[FRIULI VENEZIA GIULIA](report/regioni/friuli-venezia-giulia.csv)** | ████░░░░░░ 38.5% | 597.609 | 230.043 | +2.642 | 22 | 2026-09-15 |
+| **[LAZIO](report/regioni/lazio.csv)** | █████████░ 86.8% | 1.881.371 | 1.632.479 | +436 | 13 | 2026-09-15 |
+| **[LIGURIA](report/regioni/liguria.csv)** | ███████░░░ 74.1% | 713.530 | 528.512 | -154 | 18 | 2026-09-15 |
+| **[LOMBARDIA](report/regioni/lombardia.csv)** | ███████░░░ 66.0% | 3.136.570 | 2.069.986 | +3.260 | 87 | 2026-09-15 |
+| **[MARCHE](report/regioni/marche.csv)** | ███████░░░ 74.5% | 768.571 | 572.334 | +38 | 15 | 2026-09-15 |
+| **[MOLISE](report/regioni/molise.csv)** | ████████░░ 83.0% | 254.834 | 211.427 | +2.142 | 6 | 2026-09-15 |
+| **[PIEMONTE](report/regioni/piemonte.csv)** | ██████░░░░ 64.8% | 1.707.892 | 1.107.009 | +104 | 65 | 2026-09-15 |
+| **[PUGLIA](report/regioni/puglia.csv)** | ████████░░ 78.2% | 2.306.913 | 1.803.628 | +407 | 19 | 2026-09-15 |
+| **[SARDEGNA](report/regioni/sardegna.csv)** | ███████░░░ 69.9% | 1.156.201 | 808.008 | +55 | 7 | 2026-09-15 |
+| **[SICILIA](report/regioni/sicilia.csv)** | ████████░░ 76.8% | 3.165.306 | 2.432.270 | +190 | 19 | 2026-09-15 |
+| **[TOSCANA](report/regioni/toscana.csv)** | ████████░░ 81.8% | 1.901.458 | 1.555.651 | +2.491 | 36 | 2026-09-15 |
+| **[TRENTINO ALTO ADIGE](report/regioni/trentino-alto-adige.csv)** | ███████░░░ 65.3% | 407.040 | 265.889 | +18 | 20 | 2026-09-15 |
+| **[UMBRIA](report/regioni/umbria.csv)** | ████████░░ 82.2% | 446.928 | 367.199 | +23 | 6 | 2026-09-15 |
+| **[VALLE D'AOSTA](report/regioni/valle-d-aosta.csv)** | ██░░░░░░░░ 20.4% | 94.268 | 19.263 | -34 | 4 | 2026-09-15 |
+| **[VENETO](report/regioni/veneto.csv)** | ████████░░ 76.9% | 2.203.389 | 1.694.469 | +108 | 78 | 2026-09-15 |
+| **ITALIA** | ████████░░ 75.6% | 27.415.954 | 20.731.065 | +12.749 | 529 | 2026-09-15 |
 
-Agli estremi: **5.012 comuni** hanno georeferenziato tutto, **2.402** non hanno nemmeno una coordinata.
+Agli estremi: **4.995 comuni** hanno georeferenziato tutto, **2.398** non hanno nemmeno una coordinata.
 
 ## Come trovare quello che ti serve
 
@@ -143,4 +143,4 @@ Il tracciato dell'indirizzario ha già un campo in più rispetto ai diciotto dic
 
 ---
 
-*Report generato in automatico il 2026-08-30. Dati: ANNCSU, Agenzia delle Entrate e Istat, licenza aperta.*
+*Report generato in automatico il 2026-09-16. Dati: ANNCSU, Agenzia delle Entrate e Istat, licenza aperta.*

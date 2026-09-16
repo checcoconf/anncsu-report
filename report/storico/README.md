@@ -4,5 +4,6 @@ Ogni cartella è la fotografia di un mese: la sintesi in `README.md` e il dettag
 
 | Mese | |
 |---|---|
+| **[2026-09](2026-09/)** | [sintesi](2026-09/README.md) · [variazioni](2026-09/novita.csv) |
 | **[2026-08](2026-08/)** | [sintesi](2026-08/README.md) · [variazioni](2026-08/novita.csv) |
 

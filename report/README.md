@@ -1,10 +1,10 @@
 # I dati
 
-Fotografia di **2026-08**. La lettura guidata, con i totali e la spiegazione delle colonne, è nel [README del repository](../README.md).
+Fotografia di **2026-09**. La lettura guidata, con i totali e la spiegazione delle colonne, è nel [README del repository](../README.md).
 
 | | Cosa contiene |
 |---|---|
-| **[`novita.csv`](novita.csv)** | solo i comuni cambiati rispetto al report precedente, dal più attivo in giù — sono 2.722 |
+| **[`novita.csv`](novita.csv)** | solo i comuni cambiati rispetto al report precedente, dal più attivo in giù — sono 529 |
 | **[`regioni/`](regioni/)** | una tabella per regione, tutti i comuni, lo stato di adesso |
 | **[`riepilogo-regioni.csv`](riepilogo-regioni.csv)** | venti righe, i totali di ogni regione |
 | **[`storico/`](storico/)** | le variazioni mese per mese, congelate |
@@ -18,5 +18,5 @@ Apri una tabella regionale, clicca **History** in alto a destra e poi un commit:
 
 ## Mesi disponibili
 
-[2026-08](storico/2026-08/)
+[2026-09](storico/2026-09/) · [2026-08](storico/2026-08/)
 
